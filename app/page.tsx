@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { FileText, Presentation, FileType, Upload, Loader2, ArrowRight, ShieldCheck } from "lucide-react";
+import { FileText, Presentation, FileType, Upload, Loader2, ArrowRight, CheckCircle } from "lucide-react";
 import PriceSlider from "@/app/components/PriceSlider";
+import { CURRENCY_SYMBOL } from "@/lib/pricing-shared";
 
 type Status = "idle" | "estimating" | "estimated" | "checking-out" | "error";
 
@@ -10,9 +11,8 @@ interface Estimate {
   format: string;
   segmentCount: number;
   wordCount: number;
-  priceUsd: number;
+  priceAed: number;
   priceCents: number;
-  expertReviewFeeUsd: number;
 }
 
 export default function Home() {
@@ -21,18 +21,16 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [estimate, setEstimate] = useState<Estimate | null>(null);
   const [dragActive, setDragActive] = useState(false);
-  const [wantsExpertReview, setWantsExpertReview] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const isBusy = status === "estimating" || status === "checking-out";
 
   const reset = () => {
     setFile(null);
     setStatus("idle");
     setError(null);
     setEstimate(null);
-    setWantsExpertReview(false);
   };
-
-  const isBusy = status === "estimating" || status === "checking-out";
 
   const handleFile = async (f: File) => {
     if (isBusy) return;
@@ -44,18 +42,14 @@ export default function Home() {
     setError(null);
     setFile(f);
     setEstimate(null);
-    setWantsExpertReview(false);
     setStatus("estimating");
 
     try {
       const formData = new FormData();
       formData.append("file", f);
-
       const res = await fetch("/api/estimate", { method: "POST", body: formData });
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.error ?? "Could not read this document");
-
       setEstimate(data);
       setStatus("estimated");
     } catch (err: any) {
@@ -72,13 +66,9 @@ export default function Home() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("wantsExpertReview", String(wantsExpertReview));
-
       const res = await fetch("/api/checkout", { method: "POST", body: formData });
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.error ?? "Could not start checkout");
-
       window.location.href = data.checkoutUrl;
     } catch (err: any) {
       setError(err.message ?? "Something went wrong");
@@ -96,19 +86,19 @@ export default function Home() {
             <span lang="ar" className="font-arabic text-xl" style={{ color: "var(--indigo)" }}>حِبر</span>
           </div>
           <p className="hidden sm:block font-mono text-xs uppercase tracking-wider" style={{ color: "var(--ink-soft)" }}>
-            EN → AR · no account needed
+            EN → AR · reviewed by a human
           </p>
         </div>
       </header>
 
-      {/* Hero: interactive price calculator + mirrored EN/AR strip */}
+      {/* Hero */}
       <section className="border-b" style={{ borderColor: "var(--rule)" }}>
         <div className="max-w-5xl mx-auto px-6 pt-8">
           <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight max-w-3xl">
             Translate Word and PowerPoint documents from English to Arabic
           </h1>
           <h2 className="font-mono text-sm mt-3 max-w-2xl" style={{ color: "var(--ink-soft)" }}>
-            See your exact price before you pay. No account, no subscription.
+            AI translation reviewed by a human linguist. See your price before you pay — no account needed.
           </h2>
         </div>
         <div className="max-w-5xl mx-auto px-6 pb-10 pt-8 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
@@ -118,14 +108,31 @@ export default function Home() {
               الهدف · العربية
             </p>
             <p className="font-arabic text-2xl leading-relaxed">
-              اعرف السعر بالضبط قبل الدفع. بدون اشتراك، بدون حساب — فقط
-              مستندك، مترجمًا.
+              ترجمة احترافية مراجعة من قِبل متخصص. اعرف السعر قبل الدفع — بدون حساب.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Upload + estimate area */}
+      {/* What's included strip */}
+      <section className="border-b" style={{ borderColor: "var(--rule)", background: "var(--indigo-soft)" }}>
+        <div className="max-w-5xl mx-auto px-6 py-4 flex flex-wrap gap-6 font-mono text-xs" style={{ color: "var(--indigo)" }}>
+          {[
+            "AI translation",
+            "Human linguist review",
+            "Original formatting preserved",
+            "Fast turnaround",
+            "No account needed",
+          ].map((item) => (
+            <span key={item} className="flex items-center gap-1.5">
+              <CheckCircle size={12} />
+              {item}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      {/* Upload area */}
       <section className="flex-1">
         <div className="max-w-2xl mx-auto px-6 py-12">
           <div
@@ -133,10 +140,7 @@ export default function Home() {
             tabIndex={isBusy ? -1 : 0}
             aria-disabled={isBusy}
             aria-label={file ? `Selected file: ${file.name}. Press Enter to choose a different file.` : "Drop a document, or press Enter to choose one"}
-            onDragOver={(e) => {
-              e.preventDefault();
-              if (!isBusy) setDragActive(true);
-            }}
+            onDragOver={(e) => { e.preventDefault(); if (!isBusy) setDragActive(true); }}
             onDragLeave={() => setDragActive(false)}
             onDrop={(e) => {
               e.preventDefault();
@@ -145,15 +149,10 @@ export default function Home() {
               const f = e.dataTransfer.files?.[0];
               if (f) handleFile(f);
             }}
-            onClick={() => {
-              if (!isBusy) inputRef.current?.click();
-            }}
+            onClick={() => { if (!isBusy) inputRef.current?.click(); }}
             onKeyDown={(e) => {
               if (isBusy) return;
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                inputRef.current?.click();
-              }
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inputRef.current?.click(); }
             }}
             className="cursor-pointer rounded-sm border-2 border-dashed px-8 py-14 flex flex-col items-center text-center transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             style={{
@@ -169,10 +168,7 @@ export default function Home() {
               type="file"
               accept=".docx,.pptx,.txt"
               className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFile(f);
-              }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
             />
             {file ? (
               file.name.toLowerCase().endsWith(".docx") ? (
@@ -215,7 +211,7 @@ export default function Home() {
                   Your price
                 </p>
                 <p className="font-display text-4xl mt-2">
-                  ${(estimate.priceUsd + (wantsExpertReview ? estimate.expertReviewFeeUsd : 0)).toFixed(2)}
+                  {CURRENCY_SYMBOL} {estimate.priceAed.toFixed(0)}
                 </p>
 
                 <dl className="mt-4 grid grid-cols-2 gap-3 text-sm font-mono">
@@ -229,27 +225,10 @@ export default function Home() {
                   </div>
                 </dl>
 
-                <label
-                  className="mt-5 flex items-start gap-3 rounded-sm border px-4 py-3 cursor-pointer"
-                  style={{ borderColor: wantsExpertReview ? "var(--indigo)" : "var(--rule)" }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={wantsExpertReview}
-                    onChange={(e) => setWantsExpertReview(e.target.checked)}
-                    className="mt-1"
-                  />
-                  <span className="text-sm">
-                    <span className="flex items-center gap-1.5 font-display">
-                      <ShieldCheck size={14} style={{ color: "var(--indigo)" }} />
-                      Have an expert check it — +${estimate.expertReviewFeeUsd.toFixed(2)}
-                    </span>
-                    <span className="block font-mono text-xs mt-1" style={{ color: "var(--ink-soft)" }}>
-                      A native Arabic linguist reviews the translation for accuracy
-                      and tone, and follows up by email.
-                    </span>
-                  </span>
-                </label>
+                {/* What's included */}
+                <div className="mt-4 rounded-sm px-4 py-3 font-mono text-xs" style={{ background: "var(--indigo-soft)", color: "var(--indigo)" }}>
+                  Includes AI translation + human linguist review
+                </div>
 
                 <button
                   onClick={payAndTranslate}
@@ -267,7 +246,7 @@ export default function Home() {
                     </>
                   ) : (
                     <>
-                      Pay ${(estimate.priceUsd + (wantsExpertReview ? estimate.expertReviewFeeUsd : 0)).toFixed(2)} & translate
+                      Pay {CURRENCY_SYMBOL} {estimate.priceAed.toFixed(0)} & translate
                       <ArrowRight size={16} />
                     </>
                   )}

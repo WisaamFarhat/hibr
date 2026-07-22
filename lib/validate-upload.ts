@@ -2,18 +2,6 @@ import { detectFormat, SupportedFormat } from "./translate-document";
 import { extractSegmentsForPricing, computePriceEstimate, PriceEstimate } from "./pricing";
 import { MAX_SEGMENT_COUNT, MAX_FILE_SIZE_BYTES } from "./pricing-shared";
 
-/**
- * Result of validating + pricing an uploaded file, shared by
- * /api/estimate and /api/checkout (which previously duplicated this
- * entire sequence almost line-for-line — see the bug audit history in
- * README.md for why that duplication was worth fixing: a validation
- * rule added to one route but not the other is exactly the kind of gap
- * that's easy to introduce silently).
- *
- * Either `error` is set (with the exact NextResponse-ready status code
- * and message the route should return immediately) or all the other
- * fields are populated and the route can proceed.
- */
 export type ValidatedUpload =
   | { ok: true; format: SupportedFormat; filename: string; buffer: Buffer; estimate: PriceEstimate }
   | { ok: false; status: number; error: string };
@@ -42,7 +30,7 @@ export async function validateAndPriceUpload(file: File | null): Promise<Validat
   try {
     stats = await extractSegmentsForPricing(buffer, format);
   } catch (parseErr) {
-    console.error("Document parsing failed in validateAndPriceUpload:", parseErr);
+    console.error("Document parsing failed:", parseErr);
     return {
       ok: false,
       status: 400,

@@ -2,11 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { translateForSession } from "@/lib/translate-for-session";
 
-// Translation can take a while for larger documents (many sequential
-// Gemini batch calls). Next.js requires this to be a literal — it
-// can't import FUNCTION_MAX_DURATION_SECONDS from lib/pricing-shared.ts
-// — so if you change this value, update that constant too (it's what
-// MAX_SEGMENT_COUNT's size ceiling is actually derived from).
 export const maxDuration = 300;
 
 export async function GET(req: NextRequest) {
@@ -38,8 +33,7 @@ export async function GET(req: NextRequest) {
       if (err.message === "PENDING_FILE_NOT_FOUND") {
         return NextResponse.json(
           {
-            error:
-              "Payment confirmed, but the original file has expired on our end. Contact support with this session ID — you will not be charged again.",
+            error: "Payment confirmed, but the original file has expired. Contact support with this session ID — you will not be charged again.",
             sessionId,
           },
           { status: 410 }
@@ -52,7 +46,6 @@ export async function GET(req: NextRequest) {
       filename: result.outputFilename,
       fileBase64: result.outputBuffer.toString("base64"),
       segmentCount: result.segmentCount,
-      wantsExpertReview: result.wantsExpertReview,
     });
   } catch (err: any) {
     console.error("Confirm/translate error:", err);

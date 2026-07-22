@@ -9,7 +9,6 @@ interface ConfirmResponse {
   filename: string;
   fileBase64: string;
   segmentCount: number;
-  wantsExpertReview: boolean;
 }
 
 function SuccessContent() {
@@ -55,9 +54,7 @@ function SuccessContent() {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Download failed:", err);
-      setError(
-        "Something went wrong preparing your download. Refresh this page to try again — you won't be charged again."
-      );
+      setError("Something went wrong preparing your download. Refresh this page to try again.");
       setStatus("error");
     }
   };
@@ -102,17 +99,9 @@ function SuccessContent() {
                 <Download size={16} />
                 Download translated file
               </button>
-
-              {result.wantsExpertReview && (
-                <p
-                  className="mt-5 text-sm rounded-sm border px-4 py-3 text-left"
-                  style={{ borderColor: "var(--rule)", color: "var(--ink-soft)" }}
-                >
-                  You&apos;ve also requested expert human review. A linguist will check this
-                  translation and follow up with you directly — your machine translation
-                  above is ready to use in the meantime.
-                </p>
-              )}
+              <p className="mt-5 text-sm rounded-sm border px-4 py-3" style={{ borderColor: "var(--rule)", color: "var(--ink-soft)" }}>
+                A linguist will also review this translation and follow up with you if anything needs adjusting.
+              </p>
             </div>
           )}
 

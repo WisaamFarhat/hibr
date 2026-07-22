@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { priceForWordCount, WORDS_PER_PAGE } from "@/lib/pricing-shared";
+import { priceForWordCount, WORDS_PER_PAGE, CURRENCY_SYMBOL } from "@/lib/pricing-shared";
 
 export default function PriceSlider() {
   const [pages, setPages] = useState(3);
@@ -21,7 +21,9 @@ export default function PriceSlider() {
       </p>
 
       <div className="flex items-baseline gap-3">
-        <p className="font-display text-4xl">${price.toFixed(2)}</p>
+        <p className="font-display text-4xl">
+          {CURRENCY_SYMBOL} {price.toFixed(0)}
+        </p>
         <p className="font-mono text-sm" style={{ color: "var(--ink-soft)" }}>
           for {pages} {pages === 1 ? "page" : "pages"}
         </p>
@@ -33,7 +35,7 @@ export default function PriceSlider() {
         max={50}
         value={pages}
         onChange={(e) => setPages(Number(e.target.value))}
-        className="w-full mt-4 accent-current"
+        className="w-full mt-4"
         style={{ accentColor: "var(--indigo)" }}
         aria-label="Number of pages"
       />
@@ -44,8 +46,8 @@ export default function PriceSlider() {
       </div>
 
       <p className="font-mono text-xs mt-3" style={{ color: "var(--ink-soft)" }}>
-        ~{words.toLocaleString()} words, assuming {WORDS_PER_PAGE} words/page. Upload
-        your own document below for an exact price.
+        ~{words.toLocaleString()} words, assuming {WORDS_PER_PAGE} words/page.
+        Includes expert review. Upload your document below for an exact price.
       </p>
     </div>
   );

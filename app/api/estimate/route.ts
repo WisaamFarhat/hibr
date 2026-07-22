@@ -17,9 +17,8 @@ export async function POST(req: NextRequest) {
       format,
       segmentCount: estimate.segmentCount,
       wordCount: estimate.sourceWordCount,
-      priceUsd: estimate.priceUsd,
+      priceAed: estimate.priceAed,
       priceCents: estimate.priceCents,
-      expertReviewFeeUsd: estimate.expertReviewFeeUsd,
     });
   } catch (err: any) {
     console.error("Estimate error:", err);
